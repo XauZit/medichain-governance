@@ -1,0 +1,33 @@
+export type Category = 'LAB' | 'ECG' | 'CONSULTATION' | 'PRESCRIPTION' | 'DISCHARGE' | 'IMAGING' | 'SENSITIVE';
+export type Outcome = 'PASS' | 'FAIL' | 'NOT_APPLICABLE' | 'PENDING';
+export type ActorType = 'patient' | 'clinician';
+export type RuleKey = 'minAssurance' | 'manualReview' | 'sensitiveApprovals' | 'clinicianConsent' | 'requireOnShift' | 'requireRelationship' | 'crossHospital' | 'tokenMinutes';
+export interface Credential { id: string; issuer: string; expiresAt: number; revoked: boolean; assurance: number }
+export interface Patient { id: string; name: string; initials: string; age: number; did: string; publicKey: string; didActive: boolean; credential: Credential }
+export interface Hospital { id: string; name: string; city: string }
+export interface MedicalRecord { id: string; patientId: string; hospitalId: string; clinician: string; department: string; category: Category; date: string; title: string; summary: string; sensitive: boolean; content: Record<string, unknown>; originalHash: string; storageRef: string; status: string }
+export interface Policy { version: number; minAssurance: number; manualReview: boolean; sensitiveApprovals: number; clinicianConsent: boolean; requireOnShift: boolean; requireRelationship: boolean; crossHospital: boolean; tokenMinutes: number; activatedAt: number }
+export interface RuleResult { ruleId: string; name: string; policyVersion: number; inputs: Record<string, unknown>; expected: string; actual: string; result: Outcome; explanation: string; contribution: 'DENY' | 'OBLIGATION' | 'PERMIT' | 'NONE' }
+export interface Consent { id: string; patientId: string; doctorId: string; scopes: Category[]; purpose: string; expiresAt: number; revoked: boolean }
+export type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'VERIFYING' | 'AWAITING_REVIEW' | 'AWAITING_APPROVALS' | 'APPROVED' | 'PROPOSED' | 'PENDING_FINALITY' | 'COMMITTED' | 'TOKEN_ISSUED' | 'RETRIEVING' | 'DELIVERED' | 'DENIED';
+export interface AccessRequest { id: string; patientId: string; actorType: ActorType; actorId: string; recordIds: string[]; purpose: string; hospitalId: string; createdAt: number; nonce: string; signature: string; challengeValid: boolean; officerRole: string; onShift: boolean; relationship: boolean; status: RequestStatus; policyVersion: number; checks: RuleResult[]; approvals: string[]; review: 'PENDING' | 'APPROVED' | 'REJECTED'; denialReason?: string; denialRule?: string; tokenId?: string; blockHash?: string; releasedRecordIds: string[]; integrityValid?: boolean }
+export interface RequestInput { patientId?: string; actorType?: ActorType; recordIds?: string[]; purpose?: string; hospitalId?: string; challengeValid?: boolean; officerRole?: string; onShift?: boolean; relationship?: boolean }
+export interface CapabilityToken { id: string; requestId: string; subject: string; recordIds: string[]; policyVersion: number; issuedAt: number; expiresAt: number; nonce: string; used: boolean; revoked: boolean; blockHash: string }
+export interface Validator { id: string; name: string; online: boolean; faulty: boolean }
+export type ConsensusPhase = 'IDLE' | 'PRE_PREPARE' | 'PREPARE' | 'COMMIT' | 'FINALIZED' | 'UNAVAILABLE';
+export interface ValidatorMessage { phase: string; from: string; to: string; digest: string; accepted: boolean }
+export interface ConsensusState { phase: ConsensusPhase; digest: string; proposer: string; prepared: string[]; committed: string[]; quorum: number; messages: ValidatorMessage[]; explanation: string }
+export interface LedgerEvent { id: string; eventType: string; requestRef?: string; proposalRef?: string; recordHashes?: string[]; policyVersion: number; decision: string; ruleId?: string; subjectHash?: string; payloadHash?: string }
+export interface Block { index: number; timestamp: number; previousHash: string; merkleRoot: string; transactions: LedgerEvent[]; policyVersion: number; proposer: string; consensus: string; hash: string }
+export interface AuditEvent { id: string; timestamp: number; actor: string; requestId?: string; type: string; outcome: string; policyVersion: number; txRef?: string; explanation: string; location: 'LOCAL_AUDIT' | 'SIMULATED_LEDGER' }
+export interface Vote { actorId: string; decision: 'APPROVE' | 'REJECT'; timestamp: number; signature: string }
+export interface GovernanceProposal { id: string; ruleKey: RuleKey; oldValue: number | boolean; newValue: number | boolean; justification: string; proposerId: string; baseVersion: number; createdAt: number; expiresAt: number; status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'STALE' | 'PENDING_FINALITY' | 'ACTIVATED'; votes: Vote[]; consensus: ConsensusState; activatedVersion?: number }
+export interface StepDefinition { number: number; title: string; short: string; actor: string; component: 'PATIENT' | 'HOSPITAL' | 'IDENTITY' | 'GOVERNANCE' | 'VALIDATORS' | 'VAULT' | 'DELIVERY'; algorithm: string; simple: string; technical: string; condition: string; location: string; next: string }
+export interface StepExecution { step: number; result: Outcome; explanation: string; inputs: Record<string, unknown>; stateChange: string }
+export interface Scenario { id: string; name: string; description: string; expected: string; category: 'Access' | 'Governance' | 'Integrity' | 'Consensus' | 'Tokens'; rules: string[]; initialConditions: string[]; guidance: string[] }
+export interface SimulationState { clock: number; patients: Patient[]; hospitals: Hospital[]; records: MedicalRecord[]; policies: Policy[]; policy: Policy; consents: Consent[]; requests: AccessRequest[]; activeRequestId: string | null; tokens: CapabilityToken[]; validators: Validator[]; consensus: ConsensusState; ledger: Block[]; audit: AuditEvent[]; proposals: GovernanceProposal[]; scenarioId: string; step: number; execution: StepExecution; finished: boolean; pending: boolean; tamperedCopies: Record<string, Record<string, unknown>>; requestSequence: number; eventSequence: number; requestInput: RequestInput }
+export interface HistoryFrame { id: number; step: number; label: string; state: SimulationState }
+export interface MerkleProofItem { sibling: string; side: 'left' | 'right' }
+export interface MerkleTree { leaves: string[]; levels: string[][]; root: string }
+export interface AccessEvaluation { decision: 'PERMIT' | 'DENY' | 'PENDING'; checks: RuleResult[]; explanation: string }
+export const COMMITTEE = [{ id: 'CMIO', name: 'Chief Medical Information Officer', short: 'CMIO' }, { id: 'PRIVACY_OFFICER', name: 'Hospital Privacy Officer', short: 'Privacy Officer' }, { id: 'COMPLIANCE_OFFICER', name: 'Hospital Compliance Officer', short: 'Compliance Officer' }];
